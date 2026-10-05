@@ -236,36 +236,77 @@
     muteBtn.blur(); // klawisze strzałek nie powinny przełączać przycisku
   });
 
+  // --- iOS/Safari: kontekst audio działa dopiero po geście użytkownika, a przełącznik
+  // wyciszenia (silent switch) domyślnie głuszy Web Audio. Obejście: tryb "playback"
+  // (iOS 17+) oraz cichy element <audio>, który przełącza sesję audio na odtwarzanie mediów.
+  let silentEl = null;
+
+  function makeSilentWavUrl() {
+    const rate = 8000, n = 800; // 0,1 s ciszy, mono 8-bit
+    const buf = new ArrayBuffer(44 + n);
+    const v = new DataView(buf);
+    const str = (o, t) => [...t].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+    str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVEfmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate, true);
+    v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, "data"); v.setUint32(40, n, true);
+    new Uint8Array(buf, 44).fill(128); // 128 = cisza w 8-bit PCM
+    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  }
+
+  function unlockAudio() {
+    if (muted) { if (silentEl) silentEl.pause(); return; }
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state !== "running") audio.resume();
+      if (!silentEl) {
+        silentEl = new Audio(makeSilentWavUrl());
+        silentEl.loop = true;
+        silentEl.setAttribute("playsinline", "");
+      }
+      silentEl.play().catch(() => {});
+    } catch { /* brak wsparcia audio */ }
+  }
+  // touchend/click/keydown to gesty, które iOS uznaje za odblokowujące dźwięk
+  ["touchend", "click", "keydown"].forEach(t => document.addEventListener(t, unlockAudio, { passive: true }));
+
   function playMerge(value, delay = 0) {
     if (muted) return;
     try {
-      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-      if (audio.state === "suspended") audio.resume();
-      // im większy kafelek, tym wyższy dźwięk
-      const step = Math.log2(value) - 1;
-      const semis = PENTATONIC[step % 5] + 12 * Math.floor(step / 5);
-      const freq = 330 * Math.pow(2, semis / 12);
-      const t0 = audio.currentTime + delay;
-
-      const master = audio.createGain();
-      master.gain.setValueAtTime(0.0001, t0);
-      master.gain.exponentialRampToValueAtTime(0.28, t0 + 0.01);
-      master.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
-      master.connect(audio.destination);
-
-      // ton podstawowy z lekkim „bąbelkowym” podbiciem wysokości + kwinta dla blasku
-      [[1, "sine", 1], [1.5, "triangle", 0.35], [2, "sine", 0.25]].forEach(([mult, type, vol]) => {
-        const osc = audio.createOscillator();
-        const g = audio.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq * mult * 0.85, t0);
-        osc.frequency.exponentialRampToValueAtTime(freq * mult, t0 + 0.06);
-        g.gain.value = vol;
-        osc.connect(g).connect(master);
-        osc.start(t0);
-        osc.stop(t0 + 0.4);
-      });
+      unlockAudio();
+      const play = () => scheduleTone(value, delay);
+      if (audio.state === "running") play();
+      else audio.resume().then(play).catch(() => {});
     } catch { /* brak wsparcia audio – gra działa dalej */ }
+  }
+
+  function scheduleTone(value, delay) {
+    // im większy kafelek, tym wyższy dźwięk
+    const step = Math.log2(value) - 1;
+    const semis = PENTATONIC[step % 5] + 12 * Math.floor(step / 5);
+    const freq = 330 * Math.pow(2, semis / 12);
+    const t0 = audio.currentTime + delay;
+
+    const master = audio.createGain();
+    master.gain.setValueAtTime(0.0001, t0);
+    master.gain.exponentialRampToValueAtTime(0.28, t0 + 0.01);
+    master.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+    master.connect(audio.destination);
+
+    // ton podstawowy z lekkim „bąbelkowym” podbiciem wysokości + kwinta dla blasku
+    [[1, "sine", 1], [1.5, "triangle", 0.35], [2, "sine", 0.25]].forEach(([mult, type, vol]) => {
+      const osc = audio.createOscillator();
+      const g = audio.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq * mult * 0.85, t0);
+      osc.frequency.exponentialRampToValueAtTime(freq * mult, t0 + 0.06);
+      g.gain.value = vol;
+      osc.connect(g).connect(master);
+      osc.start(t0);
+      osc.stop(t0 + 0.4);
+    });
   }
 
   // ---------- rysowanie ----------
@@ -480,7 +521,8 @@
   }, { passive: true });
 
   applyTheme();
-  window.addEventListener("resize", resize);
+  // plansza zmienia rozmiar razem z widocznym obszarem (dvh), np. po schowaniu paska adresu
+  new ResizeObserver(resize).observe(canvas);
   resize();
   init();
   requestAnimationFrame(draw);

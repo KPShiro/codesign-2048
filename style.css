@@ -28,6 +28,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
@@ -38,7 +39,14 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 
-.container { width: var(--size); padding: 20px 0; }
+.container {
+  width: var(--size);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  max-height: 100dvh; /* zawsze widoczna część ekranu (bez paska adresu) */
+}
 
 .header { display: flex; justify-content: space-between; align-items: center; }
 h1 { font-size: 64px; margin: 0; line-height: 1; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: default; }
@@ -86,10 +94,19 @@ button:hover { background: var(--accent-hover); }
 
 .primary { display: block; width: 100%; margin-top: 12px; padding: 16px; font-size: 18px; }
 
+/* Pole na planszę: zajmuje tyle miejsca, ile zostaje w widocznej części ekranu */
+.board-area {
+  flex: 0 1 var(--size);
+  min-height: 120px;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+
 .board {
   position: relative;
-  width: var(--size);
-  height: var(--size);
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
   background: var(--board);
   border-radius: 8px;
 }
@@ -226,3 +243,15 @@ button.secondary { background: var(--board); }
 }
 button.danger { background: #c0463a; }
 #dev .primary { margin-top: 4px; padding: 14px; font-size: 16px; }
+
+/* Niskie ekrany (np. telefon w poziomie): kompaktowy nagłówek i odstępy */
+@media (max-height: 640px) {
+  .container { padding: 10px 0; }
+  h1 { font-size: 40px; }
+  .intro { margin: 4px 0 8px; font-size: 12px; line-height: 1.3; }
+  .scores { margin-bottom: 8px; }
+  .score-box { padding: 4px 12px; }
+  .score-box strong { font-size: 18px; }
+  .controls { margin-top: 8px; }
+  .primary { margin-top: 8px; padding: 10px; font-size: 16px; }
+}
