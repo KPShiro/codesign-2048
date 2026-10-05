@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2048</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>2048</h1>
+    </header>
+    <p class="intro">Połącz kafelki o tej samej liczbie i zdobądź <strong>2048</strong>. Steruj strzałkami lub WASD, a na telefonie przesuwaj palcem po planszy.</p>
+
+    <div class="scores">
+      <div class="score-box"><span>Wynik</span><strong id="score">0</strong></div>
+      <div class="score-box"><span>Rekord</span><strong id="best">0</strong></div>
+    </div>
+
+    <div class="board" id="board">
+      <canvas id="canvas"></canvas>
+      <div class="overlay" id="overlay" hidden>
+        <p id="overlay-text"></p>
+        <div class="overlay-buttons">
+          <button id="keep-going" type="button" hidden>Kontynuuj</button>
+          <button id="retry" type="button">Spróbuj ponownie</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+    <div class="theme-switch" role="group" aria-label="Motyw">
+      <button type="button" data-theme-value="light" aria-pressed="true">Jasny</button>
+      <button type="button" data-theme-value="dark" aria-pressed="false">Ciemny</button>
+    </div>
+      <button id="mute" type="button" class="icon-btn mute-btn" aria-label="Wycisz dźwięk" aria-pressed="false" title="Dźwięk">🔊</button>
+    </div>
+
+    <button id="new-game" type="button" class="primary">Nowa gra</button>
+  </main>
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <form method="dialog">
+      <h2 id="confirm-title">Rozpocząć nową grę?</h2>
+      <p id="confirm-text">Obecny postęp zostanie bezpowrotnie utracony.</p>
+      <div class="dialog-buttons">
+        <button value="cancel" class="secondary">Anuluj</button>
+        <button value="ok" id="confirm-ok">Nowa gra</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="dev" aria-labelledby="dev-title">
+    <h2 id="dev-title">Dev menu</h2>
+    <p id="dev-info" class="dev-info"></p>
+
+    <div class="dev-group">
+      <h3>Kafelki</h3>
+      <div class="dev-row">
+        <select id="dev-value" aria-label="Wartość kafelka"></select>
+        <button type="button" data-dev="add-tile">Dodaj kafelek</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" data-dev="play-sound">Zagraj dźwięk scalenia</button>
+        <button type="button" data-dev="clear-board">Wyczyść planszę</button>
+      </div>
+    </div>
+
+    <div class="dev-group">
+      <h3>Stany gry</h3>
+      <div class="dev-row">
+        <button type="button" data-dev="win">Wygrana (2048)</button>
+        <button type="button" data-dev="lose">Przegrana</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" data-dev="score-plus">+1000 pkt</button>
+        <button type="button" data-dev="reset-best">Zeruj rekord</button>
+      </div>
+    </div>
+
+    <div class="dev-group">
+      <h3>Easter egg</h3>
+      <div class="dev-row">
+        <button type="button" data-dev="show-egg">Pokaż popup</button>
+        <button type="button" data-dev="reset-egg">Zeruj licznik</button>
+      </div>
+    </div>
+
+    <div class="dev-group">
+      <h3>Dane</h3>
+      <div class="dev-row">
+        <button type="button" data-dev="reset-all" class="danger">Wyczyść zapisane dane</button>
+      </div>
+    </div>
+
+    <button type="button" id="dev-close" class="primary">Zamknij</button>
+  </dialog>
+  <div class="egg" id="egg" role="dialog" aria-modal="true" aria-labelledby="egg-title" hidden>
+    <div class="egg-hearts" id="egg-hearts" aria-hidden="true"></div>
+    <div class="egg-content">
+      <div class="egg-emoji" aria-hidden="true">🥰</div>
+      <h2 id="egg-title">Mam nadzieję, że Niunisiowi podoba się gra :)</h2>
+    </div>
+    <button type="button" id="egg-close" class="egg-close">Zamknij</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
